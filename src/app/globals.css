@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  /* Psychy AI Theme Variables (to be extended for all 5 themes and custom) */
+  --psychy-green: #00c47c;
+  --solarized-light-bg: #fdf6e3;
+  --solarized-light-fg: #657b83;
+  --high-contrast-bg: #000000;
+  --high-contrast-fg: #ffffff;
+  /* Add more theme variables as needed */
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans, Arial, Helvetica, sans-serif);
+}
+
+/* TODO: Add theme classes for .theme-light, .theme-dark, .theme-psychy-green, .theme-solarized-light, .theme-high-contrast, and custom theme support. */

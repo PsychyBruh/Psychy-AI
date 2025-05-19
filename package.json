@@ -1,0 +1,14 @@
+{
+  "name": "psychy-ai",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": ["client", "server"],
+  "scripts": {
+    "install": "cd server && npm install && cd ../client && npm install",
+    "start": "node run-all.js",
+    "dev": "node run-all.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
