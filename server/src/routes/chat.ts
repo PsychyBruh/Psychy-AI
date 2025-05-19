@@ -8,62 +8,23 @@ const router = express.Router();
 
 // POST /api/chat - Send a message and get AI response (streaming or batch)
 router.post('/', async (req: Request, res: Response) => {
-  const { message, model = 'phi3:mini', stream = false } = req.body;
-  console.log('[POST /api/chat] Incoming request:', { message, model, stream });
-  if (stream) {
-    // Streaming mode: proxy Ollama's SSE to client
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    if (typeof res.flushHeaders === 'function') res.flushHeaders();
-    try {
-      const ollamaRes = await axios.post(
-        'http://localhost:11434/api/generate',
-        {
-          model,
-          prompt: message,
-          stream: true,
-        },
-        { responseType: 'stream' }
-      );
-      const streamData = ollamaRes.data as NodeJS.ReadableStream;
-      streamData.on('data', (chunk: Buffer) => {
-        res.write(chunk);
-      });
-      streamData.on('end', () => {
-        res.end();
-      });
-      streamData.on('error', (err: any) => {
-        console.error('[POST /api/chat] Ollama stream error:', err);
-        res.write(`event: error\ndata: ${JSON.stringify({ error: err.message })}\n\n`);
-        res.end();
-      });
-      req.on('close', () => {
-        if (typeof (streamData as any).destroy === 'function') {
-          (streamData as any).destroy();
-        }
-      });
-    } catch (err: any) {
-      console.error('[POST /api/chat] Streaming error:', err);
-      res.write(`event: error\ndata: ${JSON.stringify({ error: err.message })}\n\n`);
-      res.end();
-    }
-    return;
-  }
+  const { message, model = 'phi3:mini' } = req.body;
+  console.log('[POST /api/chat] Incoming request:', { message, model });
   try {
+    // Always use batch mode (no streaming)
     const ollamaRes = await axios.post(
       'http://localhost:11434/api/generate',
       {
         model,
         prompt: message,
-        stream: false, // Always use non-streaming for compatibility
+        stream: false, // Streaming disabled
       },
       { responseType: 'json' }
     );
     console.log('[POST /api/chat] Ollama response:', ollamaRes.data);
     const data = ollamaRes.data as { response: string };
     res.json({ reply: data.response });
-    return; // Ensure no further code runs
+    return;
   } catch (err: any) {
     console.error('[POST /api/chat] Error:', err && err.stack ? err.stack : err);
     if (err.response && err.response.data) {

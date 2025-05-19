@@ -50,68 +50,28 @@ export default function Home() {
       if (session) autoTitleChat(activeSessionId, [...session.messages, { sender: 'user', content: msg }]);
     }, 0);
     setLoading(true);
-    let aiMsg = '';
-    let isStreaming = false;
     try {
-      // Try streaming first
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: msg, stream: true }),
+        body: JSON.stringify({ message: msg }),
       });
-      if (response.ok && response.headers.get('content-type')?.includes('text/event-stream') && response.body) {
-        isStreaming = true;
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        setSessions(prev => prev.map(s =>
-          s.id === activeSessionId
-            ? { ...s, messages: [...s.messages, { sender: 'ai', content: '', isStreaming: true }] }
-            : s
-        ));
-        let done = false;
-        while (!done) {
-          const { value, done: doneReading } = await reader.read();
-          done = doneReading;
-          if (value) {
-            const chunk = decoder.decode(value);
-            // Ollama SSE: each chunk is a JSON line with { response: ... }
-            // Extract and append response text
-            const matches = chunk.match(/"response":"([\s\S]*?)"/g);
-            let text = '';
-            if (matches) {
-              text = matches.map(m => JSON.parse('{' + m + '}').response).join('');
-            }
-            aiMsg += text;
-            setSessions(prev => prev.map(s => {
-              if (s.id !== activeSessionId) return s;
-              const updated = [...s.messages];
-              updated[updated.length - 1] = { sender: 'ai', content: aiMsg, isStreaming: true };
-              return { ...s, messages: updated };
-            }));
-          }
-        }
-        // Mark streaming as done
-        setSessions(prev => prev.map(s => {
-          if (s.id !== activeSessionId) return s;
-          const updated = [...s.messages];
-          updated[updated.length - 1] = { sender: 'ai', content: aiMsg };
-          return { ...s, messages: updated };
-        }));
-      } else {
-        // Fallback: batch mode
-        let data;
-        try {
-          data = await response.json();
-        } catch (jsonErr) {
-          console.error('[Frontend] Error parsing JSON:', jsonErr);
-          throw new Error('Failed to parse AI response');
-        }
-        setSessions(prev => prev.map(s =>
-          s.id === activeSessionId
-            ? { ...s, messages: [...s.messages, { sender: 'ai', content: data.reply }] }
-            : s
-        ));
+      if (!response.ok) {
+        let errText = '';
+        try { errText = await response.text(); } catch {}
+        throw new Error(errText || 'AI error');
       }
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonErr) {
+        throw new Error('Failed to parse AI response');
+      }
+      setSessions(prev => prev.map(s =>
+        s.id === activeSessionId
+          ? { ...s, messages: [...s.messages, { sender: 'ai', content: data.reply }] }
+          : s
+      ));
     } catch (e: any) {
       setSessions(prev => prev.map(s =>
         s.id === activeSessionId

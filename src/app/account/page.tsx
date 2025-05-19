@@ -15,8 +15,9 @@ const AccountPage: React.FC = () => {
   const handleEnable2FA = async () => {
     setTwoFAStatus(null);
     const res = await axios.post("/api/account/enable-2fa");
-    setTwoFASecret(res.data.base32);
-    setTwoFAQr(res.data.otpauth_url);
+    const data = res.data as any;
+    setTwoFASecret(data.base32);
+    setTwoFAQr(data.otpauth_url);
   };
   // Verify 2FA
   const handleVerify2FA = async () => {
