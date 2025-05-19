@@ -6,7 +6,7 @@
   "scripts": {
     "install": "cd server && npm install && cd ../client && npm install",
     "start": "node run-all.js",
-    "dev": "node run-all.js"
+    "dev": "next dev --turbo"
   },
   "engines": {
     "node": ">=18.0.0"
